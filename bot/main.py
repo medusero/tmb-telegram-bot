@@ -15,6 +15,7 @@ from telegram.ext import (
 from .tmb_api import obtener_llegadas
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 load_dotenv()
 
