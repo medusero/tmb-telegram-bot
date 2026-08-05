@@ -15,7 +15,7 @@ def obtener_llegadas(codi_parada):
         "app_key": app_key,
     }
 
-    r = requests.get(url_base, params=query)
+    r = requests.get(url_base, params=query, timeout=10)
     status = r.status_code
     if status == 200:
         data = r.json()
