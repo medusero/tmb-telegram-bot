@@ -12,6 +12,7 @@ from telegram.ext import (
     filters,
 )
 
+from .favoritos import cargar_favoritos, guardar_favoritos
 from .tmb_api import obtener_llegadas
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,8 @@ load_dotenv()
 telegram_bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
 telegram_user_id = int(os.environ["TELEGRAM_USER_ID"])
 ESPERANDO_CODIGO = 1
+ESPERANDO_ALIAS = 2
+ESPERANDO_CODIGO_FAV = 3
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -35,7 +38,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Utiliza /parada <código> para obtener tiempos de llegada"
+        "Usa los botones disponibles o utiliza /parada <código> para obtener tiempos de llegada directamente"
     )
 
 
@@ -70,7 +73,7 @@ async def parada(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def llegadas_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("¿Cual es el código de parada?")
+    await update.message.reply_text("¿Cuál es el código de parada?")
     return ESPERANDO_CODIGO
 
 
@@ -87,12 +90,48 @@ async def llegadas_recibir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ESPERANDO_CODIGO
 
 
+async def favoritos_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¿Qué alias tendrá esta parada?")
+    return ESPERANDO_ALIAS
+
+
+async def favoritos_recibir_alias(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    alias = update.message.text
+    if len(alias.split()) == 1:
+        context.user_data["alias"] = alias
+        await update.message.reply_text("¿Cuál es el código de parada?")
+        return ESPERANDO_CODIGO_FAV
+    else:
+        await update.effective_message.reply_text(
+            "Has introducido dos palabras; solo se acepta una"
+        )
+        return ESPERANDO_ALIAS
+
+
+async def favoritos_recibir_codigo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    codigo = update.message.text
+    try:
+        int(codigo)
+        favoritos = cargar_favoritos()
+        alias = context.user_data["alias"]
+        favoritos[alias] = codigo
+        guardar_favoritos(favoritos)
+        await update.message.reply_text("Añadido el nuevo favorito")
+        return ConversationHandler.END
+    except Exception:
+        await update.effective_message.reply_text(
+            "El código de parada ha de ser un número"
+        )
+        return ESPERANDO_CODIGO_FAV
+
+
 async def post_init(application):
     await application.bot.set_my_commands(
         [
             ("start", "Inicia el bot"),
             ("help", "Recibe ayuda"),
             ("llegadas", "Consulta llegadas"),
+            ("guardar", "Guarda tus paradas"),
         ]
     )
 
@@ -101,7 +140,7 @@ conv_handler = ConversationHandler(
     entry_points=[
         CommandHandler(
             "llegadas", llegadas_inicio, filters=filters.User(user_id=telegram_user_id)
-        )
+        ),
     ],
     states={
         ESPERANDO_CODIGO: [
@@ -116,6 +155,32 @@ conv_handler = ConversationHandler(
     fallbacks=[],
 )
 
+fav_handler = ConversationHandler(
+    entry_points=[
+        CommandHandler(
+            "guardar", favoritos_inicio, filters=filters.User(user_id=telegram_user_id)
+        ),
+    ],
+    states={
+        ESPERANDO_ALIAS: [
+            MessageHandler(
+                filters.TEXT
+                & ~filters.COMMAND
+                & filters.User(user_id=telegram_user_id),
+                favoritos_recibir_alias,
+            )
+        ],
+        ESPERANDO_CODIGO_FAV: [
+            MessageHandler(
+                filters.TEXT
+                & ~filters.COMMAND
+                & filters.User(user_id=telegram_user_id),
+                favoritos_recibir_codigo,
+            )
+        ],
+    },
+    fallbacks=[],
+)
 
 def main():
     application = (
@@ -133,6 +198,7 @@ def main():
         CommandHandler("parada", parada, filters=filters.User(user_id=telegram_user_id))
     )
     application.add_handler(conv_handler)
+    application.add_handler(fav_handler)
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
