@@ -145,7 +145,7 @@ async def favoritos_listar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not favoritos:
         await update.message.reply_text("No tienes nada guardado")
     else:
-        await update.message.reply_markdown(favoritos)
+        await update.message.reply_text(favoritos)
 
 
 async def favoritos_borrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
