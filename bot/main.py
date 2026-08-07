@@ -12,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 
-from .favoritos import cargar_favoritos, guardar_favoritos
+from .favorites import cargar_favoritos, guardar_favoritos, listar_favoritos
 from .tmb_api import obtener_llegadas
 
 logging.basicConfig(level=logging.INFO)
@@ -125,6 +125,14 @@ async def favoritos_recibir_codigo(update: Update, context: ContextTypes.DEFAULT
         return ESPERANDO_CODIGO_FAV
 
 
+async def favoritos_listar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    favoritos = listar_favoritos()
+    if not favoritos:
+        await update.message.reply_text("No tienes nada guardado")
+    else:
+        await update.message.reply_markdown(favoritos)
+
+
 async def post_init(application):
     await application.bot.set_my_commands(
         [
@@ -132,6 +140,7 @@ async def post_init(application):
             ("help", "Recibe ayuda"),
             ("llegadas", "Consulta llegadas"),
             ("guardar", "Guarda tus paradas"),
+            ("favoritos", "Lista tus paradas guardadas"),
         ]
     )
 
@@ -182,6 +191,7 @@ fav_handler = ConversationHandler(
     fallbacks=[],
 )
 
+
 def main():
     application = (
         Application.builder().token(telegram_bot_token).post_init(post_init).build()
@@ -196,6 +206,9 @@ def main():
     )
     application.add_handler(
         CommandHandler("parada", parada, filters=filters.User(user_id=telegram_user_id))
+    )
+    application.add_handler(
+        CommandHandler("favoritos", favoritos_listar, filters=filters.User(user_id=telegram_user_id))
     )
     application.add_handler(conv_handler)
     application.add_handler(fav_handler)
