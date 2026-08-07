@@ -18,6 +18,7 @@ from .favorites import (
     guardar_favoritos,
     listar_favoritos,
 )
+from .healthcheck import healthcheck
 from .tmb_api import obtener_llegadas
 
 logging.basicConfig(level=logging.INFO)
@@ -46,7 +47,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     primera_lista = "/llegadas\n/guardar\n/favoritos\n/cancelar\n"
     segundo_encabezado = "*O utiliza estos comandos directamente*:\n"
     segunda_lista = "/parada _código_: para obtener tiempos de llegada\n/borrar _alias_: para borrar un favorito"
-    await update.message.reply_markdown_v2(primer_encabezado + primera_lista + segundo_encabezado + segunda_lista)
+    await update.message.reply_markdown_v2(
+        primer_encabezado + primera_lista + segundo_encabezado + segunda_lista
+    )
+
 
 async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Operación cancelada.")
@@ -78,7 +82,9 @@ async def parada(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto = formatear_llegada(codi_parada)
         await update.message.reply_text(texto)
     except Exception:
-        await update.effective_message.reply_text("La API no responde; inténtalo en unos minutos")
+        await update.effective_message.reply_text(
+            "La API no responde; inténtalo en unos minutos"
+        )
 
 
 async def llegadas_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -93,7 +99,9 @@ async def llegadas_recibir(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(texto)
         return ConversationHandler.END
     except Exception:
-        await update.effective_message.reply_text("Eso no es un código de parada; inténtalo otra vez")
+        await update.effective_message.reply_text(
+            "Eso no es un código de parada; inténtalo otra vez"
+        )
         return ESPERANDO_CODIGO
 
 
@@ -109,7 +117,9 @@ async def favoritos_recibir_alias(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("¿Cuál es el código de parada?")
         return ESPERANDO_CODIGO_FAV
     else:
-        await update.effective_message.reply_text("Has introducido dos palabras; solo se acepta una")
+        await update.effective_message.reply_text(
+            "Has introducido dos palabras; solo se acepta una"
+        )
         return ESPERANDO_ALIAS
 
 
@@ -124,7 +134,9 @@ async def favoritos_recibir_codigo(update: Update, context: ContextTypes.DEFAULT
         await update.message.reply_text("Añadido el nuevo favorito")
         return ConversationHandler.END
     except Exception:
-        await update.effective_message.reply_text("El código de parada ha de ser un número")
+        await update.effective_message.reply_text(
+            "El código de parada ha de ser un número"
+        )
         return ESPERANDO_CODIGO_FAV
 
 
@@ -145,7 +157,9 @@ async def favoritos_borrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         borrar_favoritos(alias)
         await update.message.reply_text(f"{alias} ha sido borrado")
     except KeyError:
-        await update.effective_message.reply_text(f"{alias} no está entre los guardados")
+        await update.effective_message.reply_text(
+            f"{alias} no está entre los guardados"
+        )
 
 
 async def post_init(application):
@@ -209,15 +223,40 @@ fav_handler = ConversationHandler(
 
 
 def main():
-    application = (Application.builder().token(telegram_bot_token).post_init(post_init).build())
-    application.add_handler(CommandHandler("start", start, filters=filters.User(user_id=telegram_user_id)))
-    application.add_handler(CommandHandler("help", help_command, filters=filters.User(user_id=telegram_user_id)))
-    application.add_handler(CommandHandler("cancelar", cancelar, filters=filters.User(user_id=telegram_user_id)))
-    application.add_handler(CommandHandler("parada", parada, filters=filters.User(user_id=telegram_user_id)))
-    application.add_handler(CommandHandler("favoritos", favoritos_listar, filters=filters.User(user_id=telegram_user_id),))
-    application.add_handler(CommandHandler("borrar", favoritos_borrar, filters=filters.User(user_id=telegram_user_id)))
+    application = (
+        Application.builder().token(telegram_bot_token).post_init(post_init).build()
+    )
+    application.add_handler(
+        CommandHandler("start", start, filters=filters.User(user_id=telegram_user_id))
+    )
+    application.add_handler(
+        CommandHandler(
+            "help", help_command, filters=filters.User(user_id=telegram_user_id)
+        )
+    )
+    application.add_handler(
+        CommandHandler(
+            "cancelar", cancelar, filters=filters.User(user_id=telegram_user_id)
+        )
+    )
+    application.add_handler(
+        CommandHandler("parada", parada, filters=filters.User(user_id=telegram_user_id))
+    )
+    application.add_handler(
+        CommandHandler(
+            "favoritos",
+            favoritos_listar,
+            filters=filters.User(user_id=telegram_user_id),
+        )
+    )
+    application.add_handler(
+        CommandHandler(
+            "borrar", favoritos_borrar, filters=filters.User(user_id=telegram_user_id)
+        )
+    )
     application.add_handler(conv_handler)
     application.add_handler(fav_handler)
+    application.job_queue.run_repeating(healthcheck, interval=300, first=300)
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
