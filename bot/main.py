@@ -42,7 +42,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Usa los botones disponibles o utiliza /parada <código> para obtener tiempos de llegada directamente o /borrar <alias> para borrar un favorito")
+    primer_encabezado = "*Usa los botones disponibles*:\n"
+    primera_lista = "/llegadas\n/guardar\n/favoritos\n/cancelar\n"
+    segundo_encabezado = "*O utiliza estos comandos directamente*:\n"
+    segunda_lista = "/parada _código_: para obtener tiempos de llegada\n/borrar _alias_: para borrar un favorito"
+    await update.message.reply_markdown_v2(primer_encabezado + primera_lista + segundo_encabezado + segunda_lista)
+
+async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Operación cancelada.")
+    return ConversationHandler.END
 
 
 def formatear_llegada(codi_parada):
@@ -145,6 +153,7 @@ async def post_init(application):
         [
             ("start", "Inicia el bot"),
             ("help", "Recibe ayuda"),
+            ("cancelar", "Cancela la operación"),
             ("llegadas", "Consulta llegadas"),
             ("guardar", "Guarda tus paradas"),
             ("favoritos", "Lista tus paradas guardadas"),
@@ -168,7 +177,7 @@ conv_handler = ConversationHandler(
             )
         ],
     },
-    fallbacks=[],
+    fallbacks=[CommandHandler("cancelar", cancelar)],
 )
 
 fav_handler = ConversationHandler(
@@ -195,7 +204,7 @@ fav_handler = ConversationHandler(
             )
         ],
     },
-    fallbacks=[],
+    fallbacks=[CommandHandler("cancelar", cancelar)],
 )
 
 
@@ -203,6 +212,7 @@ def main():
     application = (Application.builder().token(telegram_bot_token).post_init(post_init).build())
     application.add_handler(CommandHandler("start", start, filters=filters.User(user_id=telegram_user_id)))
     application.add_handler(CommandHandler("help", help_command, filters=filters.User(user_id=telegram_user_id)))
+    application.add_handler(CommandHandler("cancelar", cancelar, filters=filters.User(user_id=telegram_user_id)))
     application.add_handler(CommandHandler("parada", parada, filters=filters.User(user_id=telegram_user_id)))
     application.add_handler(CommandHandler("favoritos", favoritos_listar, filters=filters.User(user_id=telegram_user_id),))
     application.add_handler(CommandHandler("borrar", favoritos_borrar, filters=filters.User(user_id=telegram_user_id)))
