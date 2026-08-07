@@ -1,6 +1,6 @@
 import json
-from json.decoder import JSONDecodeError
 import os
+from json.decoder import JSONDecodeError
 
 ugly_path = os.path.join(os.path.dirname(__file__), "..", "data", "favorites.json")
 clean_path = os.path.abspath(ugly_path)
@@ -29,3 +29,10 @@ def listar_favoritos():
     lines = [f"- {key}: {value}" for key, value in favorites.items()]
     markdown_list = "\n".join(lines)
     return markdown_list
+
+
+def borrar_favoritos(f):
+    favoritos = cargar_favoritos()
+    borrado = favoritos.pop(f)
+    guardar_favoritos(favoritos)
+    return borrado
