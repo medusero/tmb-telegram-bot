@@ -1,5 +1,7 @@
 import logging
 import os
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from telegram import ForceReply, Update
@@ -58,16 +60,28 @@ async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def formatear_llegada(codi_parada):
+    h1 = datetime.now(ZoneInfo("Europe/Madrid"))
     lista = obtener_llegadas(codi_parada)
     mensaje = []
     for i in lista:
         nom_linia = i["linia"]
         horas = i["horas"]
         futures_arribades = []
+        tiempo_relativo = []
         for k in horas:
             hora_arribada = k.strftime("%H:%M")
             futures_arribades.append(hora_arribada)
-        linia_arribada = f"Linea {nom_linia}: {', '.join(futures_arribades)}"
+            h2 = k
+            delta = timedelta.total_seconds(h2 - h1)
+            minutos_str = str(round(delta / 60))
+            minutos = " (" + minutos_str + "m.)"
+            tiempo_relativo.append(minutos)
+        zipped = zip(futures_arribades, tiempo_relativo)
+        llegadas_formateadas = []
+        for z1, z2 in zipped:
+            combine = z1 + z2
+            llegadas_formateadas.append(combine)
+        linia_arribada = f"Linea {nom_linia}: {', '.join(llegadas_formateadas)}"
         mensaje.append(linia_arribada)
     texto = f"\n".join(mensaje)
     return texto
