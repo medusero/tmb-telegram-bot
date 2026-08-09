@@ -44,9 +44,9 @@ Toma la salida de obtener_llegadas y construye el texto final por línea, con ho
 - main(): monta la Application, registra todos los handlers y el job de healthcheck, y arranca el polling.
 
 ## Requisitos previos
-- Docker o Podman, según el modo de despliegue que prefieras
-- Una API de TMB: Se obtiene creando una cuenta (gratuita) en [developer.tmb.cat](https://developer.tmb.cat)
-- Una cuenta (gratuita) de Telegram y crear un bot con [BotFather](https://telegram.me/BotFather)
+- Docker o Podman, según el modo de despliegue que prefieras.
+- Una API de TMB: Se obtiene creando una cuenta (gratuita) en [developer.tmb.cat](https://developer.tmb.cat).
+- Una cuenta (gratuita) de Telegram y crear un bot con [BotFather](https://telegram.me/BotFather).
 
 El bot solo hace peticiones salientes (long polling a Telegram + llamadas a la API de TMB), así que no hace falta exponer ningún puerto.  
 ## Despliegue
