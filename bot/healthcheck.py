@@ -2,26 +2,26 @@ import os
 
 from telegram.ext import ContextTypes
 
-from .tmb_api import obtener_llegadas
+from .tmb_api import get_arrivals
 
 
 async def healthcheck(context: ContextTypes.DEFAULT_TYPE):
     telegram_user_id = int(os.environ["TELEGRAM_USER_ID"])
-    contador = context.bot_data.get("fallos", 0)
-    validador = context.bot_data.get("alerta", False)
+    failure_count = context.bot_data.get("failures", 0)
+    already_alerted = context.bot_data.get("alerted", False)
     try:
-        obtener_llegadas(1669)
-        contador = 0
-        context.bot_data["fallos"] = contador
+        get_arrivals(1669)
+        failure_count = 0
+        context.bot_data["failures"] = failure_count
     except Exception:
-        contador += 1
-        context.bot_data["fallos"] = contador
-        if contador >= 3 and not validador:
-            validador = True
-            context.bot_data["alerta"] = validador
+        failure_count += 1
+        context.bot_data["failures"] = failure_count
+        if failure_count >= 3 and not already_alerted:
+            already_alerted = True
+            context.bot_data["alerted"] = already_alerted
             await context.bot.send_message(chat_id=telegram_user_id, text="Revisa la API")
     else:
-        if validador:
-            validador = False
-            context.bot_data["alerta"] = validador
+        if already_alerted:
+            already_alerted = False
+            context.bot_data["alerted"] = already_alerted
             await context.bot.send_message(chat_id=telegram_user_id, text="API recuperada")

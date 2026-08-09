@@ -5,36 +5,36 @@ from zoneinfo import ZoneInfo
 import requests
 
 
-def obtener_llegadas(codi_parada):
+def get_arrivals(stop_code):
     TZ = ZoneInfo("Europe/Madrid")
     app_id = os.getenv("TMB_APP_ID")
     app_key = os.getenv("TMB_APP_KEY")
-    url_base = f"https://api.tmb.cat/v1/itransit/bus/parades/{codi_parada}"
+    base_url = f"https://api.tmb.cat/v1/itransit/bus/parades/{stop_code}"
     query = {
         "app_id": app_id,
         "app_key": app_key,
     }
 
-    r = requests.get(url_base, params=query, timeout=10)
+    r = requests.get(base_url, params=query, timeout=10)
     status = r.status_code
     if status == 200:
         data = r.json()
-        linies_trajectes = data["parades"][0]["linies_trajectes"]
-        resultat = []
-        for i in linies_trajectes:
-            nom_linia = i["nom_linia"]
-            propers_busos = i["propers_busos"]
-            futures_arribades = []
-            for k in propers_busos:
-                temps_arribada = k["temps_arribada"] / 1000
-                dt_object = datetime.fromtimestamp(temps_arribada, TZ)
-                futures_arribades.append(dt_object)
-            resultat.append({"linia": nom_linia, "horas": futures_arribades})
-        return resultat
+        line_routes = data["parades"][0]["linies_trajectes"]
+        result = []
+        for i in line_routes:
+            line_name = i["nom_linia"]
+            upcoming_buses = i["propers_busos"]
+            arrival_times = []
+            for k in upcoming_buses:
+                arrival_epoch_seconds = k["temps_arribada"] / 1000
+                dt_object = datetime.fromtimestamp(arrival_epoch_seconds, TZ)
+                arrival_times.append(dt_object)
+            result.append({"line_name": line_name, "arrival_times": arrival_times})
+        return result
     else:
         raise Exception(f"Algo no está funcionando (status {status})")
 
 
 if __name__ == "__main__":
-    llegadas = obtener_llegadas("1669")
-    print(llegadas[0]["horas"][0].strftime("%H:%M"))
+    arrivals = get_arrivals("1669")
+    print(arrivals[0]["arrival_times"][0].strftime("%H:%M"))

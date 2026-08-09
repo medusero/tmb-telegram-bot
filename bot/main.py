@@ -15,13 +15,13 @@ from telegram.ext import (
 )
 
 from .favorites import (
-    borrar_favoritos,
-    cargar_favoritos,
-    guardar_favoritos,
-    listar_favoritos,
+    delete_favorites,
+    list_favorites,
+    load_favorites,
+    save_favorites,
 )
 from .healthcheck import healthcheck
-from .tmb_api import obtener_llegadas
+from .tmb_api import get_arrivals
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -31,9 +31,9 @@ load_dotenv()
 
 telegram_bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
 telegram_user_id = int(os.environ["TELEGRAM_USER_ID"])
-ESPERANDO_CODIGO = 1
-ESPERANDO_ALIAS = 2
-ESPERANDO_CODIGO_FAV = 3
+WAITING_FOR_STOP_CODE = 1
+WAITING_FOR_ALIAS = 2
+WAITING_FOR_FAVORITE_CODE = 3
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,121 +54,121 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Operación cancelada.")
     return ConversationHandler.END
 
 
-def formatear_llegada(codi_parada):
+def format_arrivals(stop_code):
     h1 = datetime.now(ZoneInfo("Europe/Madrid"))
-    lista = obtener_llegadas(codi_parada)
-    mensaje = []
-    for i in lista:
-        nom_linia = i["linia"]
-        horas = i["horas"]
-        futures_arribades = []
-        tiempo_relativo = []
-        for k in horas:
-            hora_arribada = k.strftime("%H:%M")
-            futures_arribades.append(hora_arribada)
+    arrivals = get_arrivals(stop_code)
+    message_lines = []
+    for i in arrivals:
+        line_name = i["line_name"]
+        arrival_times = i["arrival_times"]
+        arrival_time_strings = []
+        relative_times = []
+        for k in arrival_times:
+            arrival_time_str = k.strftime("%H:%M")
+            arrival_time_strings.append(arrival_time_str)
             h2 = k
             delta = timedelta.total_seconds(h2 - h1)
-            minutos_str = str(round(delta / 60))
-            minutos = " (" + minutos_str + "m.)"
-            tiempo_relativo.append(minutos)
-        zipped = zip(futures_arribades, tiempo_relativo)
-        llegadas_formateadas = []
+            minutes_str = str(round(delta / 60))
+            minutes_label = " (" + minutes_str + "m.)"
+            relative_times.append(minutes_label)
+        zipped = zip(arrival_time_strings, relative_times)
+        formatted_arrivals = []
         for z1, z2 in zipped:
             combine = z1 + z2
-            llegadas_formateadas.append(combine)
-        linia_arribada = f"Linea {nom_linia}: {', '.join(llegadas_formateadas)}"
-        mensaje.append(linia_arribada)
-    texto = f"\n".join(mensaje)
-    return texto
+            formatted_arrivals.append(combine)
+        line_text = f"Linea {line_name}: {', '.join(formatted_arrivals)}"
+        message_lines.append(line_text)
+    text = f"\n".join(message_lines)
+    return text
 
 
-async def parada(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.effective_message.reply_text("Necesito un código de parada")
         return
     try:
-        codi_parada = context.args[0]
-        texto = formatear_llegada(codi_parada)
-        await update.message.reply_text(texto)
+        stop_code = context.args[0]
+        text = format_arrivals(stop_code)
+        await update.message.reply_text(text)
     except Exception:
         await update.effective_message.reply_text(
             "La API no responde; inténtalo en unos minutos"
         )
 
 
-async def llegadas_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def arrivals_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¿Cuál es el código de parada?")
-    return ESPERANDO_CODIGO
+    return WAITING_FOR_STOP_CODE
 
 
-async def llegadas_recibir(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def arrivals_receive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        codi_parada = update.message.text
-        texto = formatear_llegada(codi_parada)
-        await update.message.reply_text(texto)
+        stop_code = update.message.text
+        text = format_arrivals(stop_code)
+        await update.message.reply_text(text)
         return ConversationHandler.END
     except Exception:
         await update.effective_message.reply_text(
             "Eso no es un código de parada; inténtalo otra vez"
         )
-        return ESPERANDO_CODIGO
+        return WAITING_FOR_STOP_CODE
 
 
-async def favoritos_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def favorites_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¿Qué alias tendrá esta parada?")
-    return ESPERANDO_ALIAS
+    return WAITING_FOR_ALIAS
 
 
-async def favoritos_recibir_alias(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def favorites_receive_alias(update: Update, context: ContextTypes.DEFAULT_TYPE):
     alias = update.message.text
     if len(alias.split()) == 1:
         context.user_data["alias"] = alias
         await update.message.reply_text("¿Cuál es el código de parada?")
-        return ESPERANDO_CODIGO_FAV
+        return WAITING_FOR_FAVORITE_CODE
     else:
         await update.effective_message.reply_text(
             "Has introducido dos palabras; solo se acepta una"
         )
-        return ESPERANDO_ALIAS
+        return WAITING_FOR_ALIAS
 
 
-async def favoritos_recibir_codigo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    codigo = update.message.text
+async def favorites_receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    code = update.message.text
     try:
-        int(codigo)
-        favoritos = cargar_favoritos()
+        int(code)
+        favorites = load_favorites()
         alias = context.user_data["alias"]
-        favoritos[alias] = codigo
-        guardar_favoritos(favoritos)
+        favorites[alias] = code
+        save_favorites(favorites)
         await update.message.reply_text("Añadido el nuevo favorito")
         return ConversationHandler.END
     except Exception:
         await update.effective_message.reply_text(
             "El código de parada ha de ser un número"
         )
-        return ESPERANDO_CODIGO_FAV
+        return WAITING_FOR_FAVORITE_CODE
 
 
-async def favoritos_listar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    favoritos = listar_favoritos()
-    if not favoritos:
+async def favorites_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    favorites = list_favorites()
+    if not favorites:
         await update.message.reply_text("No tienes nada guardado")
     else:
-        await update.message.reply_text(favoritos)
+        await update.message.reply_text(favorites)
 
 
-async def favoritos_borrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def favorites_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.effective_message.reply_text("Necesito una entrada para borrar")
         return
     try:
         alias = context.args[0]
-        borrar_favoritos(alias)
+        delete_favorites(alias)
         await update.message.reply_text(f"{alias} ha sido borrado")
     except KeyError:
         await update.effective_message.reply_text(
@@ -192,47 +192,47 @@ async def post_init(application):
 conv_handler = ConversationHandler(
     entry_points=[
         CommandHandler(
-            "llegadas", llegadas_inicio, filters=filters.User(user_id=telegram_user_id)
+            "llegadas", arrivals_start, filters=filters.User(user_id=telegram_user_id)
         ),
     ],
     states={
-        ESPERANDO_CODIGO: [
+        WAITING_FOR_STOP_CODE: [
             MessageHandler(
                 filters.TEXT
                 & ~filters.COMMAND
                 & filters.User(user_id=telegram_user_id),
-                llegadas_recibir,
+                arrivals_receive,
             )
         ],
     },
-    fallbacks=[CommandHandler("cancelar", cancelar)],
+    fallbacks=[CommandHandler("cancelar", cancel)],
 )
 
 fav_handler = ConversationHandler(
     entry_points=[
         CommandHandler(
-            "guardar", favoritos_inicio, filters=filters.User(user_id=telegram_user_id)
+            "guardar", favorites_start, filters=filters.User(user_id=telegram_user_id)
         ),
     ],
     states={
-        ESPERANDO_ALIAS: [
+        WAITING_FOR_ALIAS: [
             MessageHandler(
                 filters.TEXT
                 & ~filters.COMMAND
                 & filters.User(user_id=telegram_user_id),
-                favoritos_recibir_alias,
+                favorites_receive_alias,
             )
         ],
-        ESPERANDO_CODIGO_FAV: [
+        WAITING_FOR_FAVORITE_CODE: [
             MessageHandler(
                 filters.TEXT
                 & ~filters.COMMAND
                 & filters.User(user_id=telegram_user_id),
-                favoritos_recibir_codigo,
+                favorites_receive_code,
             )
         ],
     },
-    fallbacks=[CommandHandler("cancelar", cancelar)],
+    fallbacks=[CommandHandler("cancelar", cancel)],
 )
 
 
@@ -250,22 +250,24 @@ def main():
     )
     application.add_handler(
         CommandHandler(
-            "cancelar", cancelar, filters=filters.User(user_id=telegram_user_id)
+            "cancelar", cancel, filters=filters.User(user_id=telegram_user_id)
         )
     )
     application.add_handler(
-        CommandHandler("parada", parada, filters=filters.User(user_id=telegram_user_id))
+        CommandHandler(
+            "parada", stop_command, filters=filters.User(user_id=telegram_user_id)
+        )
     )
     application.add_handler(
         CommandHandler(
             "favoritos",
-            favoritos_listar,
+            favorites_list,
             filters=filters.User(user_id=telegram_user_id),
         )
     )
     application.add_handler(
         CommandHandler(
-            "borrar", favoritos_borrar, filters=filters.User(user_id=telegram_user_id)
+            "borrar", favorites_delete, filters=filters.User(user_id=telegram_user_id)
         )
     )
     application.add_handler(conv_handler)
