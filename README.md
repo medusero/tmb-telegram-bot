@@ -32,8 +32,8 @@ Toma la salida de obtener_llegadas y construye el texto final por línea, con ho
 - `/start`
 - `/help`
 - `/cancelar`
-- `/parada` "código" (una sola respuesta, sin conversación)
-- `/favoritos` (lista)
+- `/parada` "código"
+- `/favoritos`
 - `/borrar` "alias"
 ### Flujos conversacionales (ConversationHandler):
 - `/llegadas` (pregunta el código de parada y luego responde)
