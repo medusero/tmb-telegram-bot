@@ -65,11 +65,12 @@ cd $HOME/bot/
 chmod 600 .env
 mkdir data
 ```
-Con el comando docker a pelo:[^1]
+#### Con el comando docker a pelo
+Puesto que ya hemos construido la imagen previamente lo podemos lanzar sin build:
 ```
 docker run -d --name tmb-bot --env-file .env -v ./data:/app/data --restart unless-stopped tmb-bot
 ```
-Con Docker Compose:
+#### Con Docker Compose
 Crea el archivo `$HOME/bot/compose.yaml` con este contenido:
 ```yaml
 services:
@@ -86,8 +87,6 @@ Desde el directorio `$HOME/bot`:
 ```
 docker compose up -d
 ```
-[^1]: Puesto que ya hemos construido la imagen previamente lo podemos lanzar sin build.
-
 ### Podman
 Igual que con Docker, pero ojo si vas rootless: la imagen corre con `uid 1000` dentro del contenedor, y ese UID no mapea automáticamente al dueño del directorio del host, aunque este tambien sea `uid 1000`.  
 ```
@@ -101,11 +100,11 @@ chmod 600 .env
 mkdir data
 podman unshare chown 1000:1000 data
 ```
-Con el comando podman a pelo:
+#### Con el comando podman a pelo
 ```
 podman run -d --name tmb-bot --env-file .env -v ./data:/app/data:Z --restart unless-stopped tmb-bot
 ```
-Como quadlet bajo systemd:  
+#### Como quadlet bajo systemd
 Crea el archivo `$HOME/.config/containers/systemd/tmb-bot.container` con este contenido:
 ```ini
 [Container]
