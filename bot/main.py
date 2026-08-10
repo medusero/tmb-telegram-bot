@@ -1,4 +1,3 @@
-from bdb import effective
 import logging
 import os
 from datetime import datetime, timedelta
@@ -176,9 +175,12 @@ async def delete_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         favorite_lists = load_favorites()
         keys = list(favorite_lists.keys())
         await query.answer()
-        await query.edit_message_text(text=f"Borrada la parada nº {delete_favorites(keys[int_query])}")
+        await query.edit_message_text(
+            text=f"Borrada la parada nº {delete_favorites(keys[int_query])}"
+        )
     else:
         return
+
 
 async def post_init(application):
     await application.bot.set_my_commands(
