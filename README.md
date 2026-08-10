@@ -34,11 +34,12 @@ Toma la salida de obtener_llegadas y construye el texto final por línea, con ho
 - `/cancelar`
 - `/parada` "código"
 - `/favoritos`
-- `/borrar` "alias"
 ### Flujos conversacionales (ConversationHandler):
 - `/llegadas` (pregunta el código de parada y luego responde)
 - `/guardar` (pregunta alias y luego código, y lo guarda)
 - `/cancelar` (salida de emergencia para los dos de arriba)
+### Menú de botones:
+- `/borrar` (presenta cada favorito como un botón; pulsar uno lo elimina)
 ### Otros detalles
 - post_init: registra el menú de com al arrancar.
 - main(): monta la Application, registra todos los handlers y el job de healthcheck, y arranca el polling.
