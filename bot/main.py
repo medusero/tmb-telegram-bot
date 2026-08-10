@@ -1,12 +1,14 @@
+from bdb import effective
 import logging
 import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from telegram import ForceReply, Update
+from telegram import ForceReply, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
@@ -48,7 +50,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     primer_encabezado = "*Usa los botones disponibles*:\n"
     primera_lista = "/llegadas\n/guardar\n/favoritos\n/cancelar\n"
     segundo_encabezado = "*O utiliza estos comandos directamente*:\n"
-    segunda_lista = "/parada _código_: para obtener tiempos de llegada\n/borrar _alias_: para borrar un favorito"
+    segunda_lista = "/parada _código_: para obtener tiempos de llegada"
     await update.message.reply_markdown_v2(
         primer_encabezado + primera_lista + segundo_encabezado + segunda_lista
     )
@@ -158,28 +160,36 @@ async def favorites_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def favorites_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.effective_message.reply_text("Necesito una entrada para borrar")
-        return
-    try:
-        alias = context.args[0]
-        delete_favorites(alias)
-        await update.message.reply_text(f"{alias} ha sido borrado")
-    except KeyError:
-        await update.effective_message.reply_text(
-            f"{alias} no está entre los guardados"
-        )
+    keyboard = []
+    favorite_list = load_favorites()
+    for index, (key, value) in enumerate(favorite_list.items()):
+        button = InlineKeyboardButton(text=key + ": " + value, callback_data=str(index))
+        keyboard.append([button])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("Elige:", reply_markup=reply_markup)
 
+
+async def delete_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id == telegram_user_id:
+        query = update.callback_query
+        int_query = int(query.data)
+        favorite_lists = load_favorites()
+        keys = list(favorite_lists.keys())
+        await query.answer()
+        await query.edit_message_text(text=f"Borrada la parada nº {delete_favorites(keys[int_query])}")
+    else:
+        return
 
 async def post_init(application):
     await application.bot.set_my_commands(
         [
-            ("start", "Inicia el bot"),
-            ("help", "Recibe ayuda"),
-            ("cancelar", "Cancela la operación"),
             ("llegadas", "Consulta llegadas"),
             ("guardar", "Guarda tus paradas"),
             ("favoritos", "Lista tus paradas guardadas"),
+            ("borrar", "Borra un favorito"),
+            ("cancelar", "Cancela la operación"),
+            ("start", "Inicia el bot"),
+            ("help", "Recibe ayuda"),
         ]
     )
 
@@ -262,9 +272,12 @@ def main():
     )
     application.add_handler(
         CommandHandler(
-            "borrar", favorites_delete, filters=filters.User(user_id=telegram_user_id)
+            "borrar",
+            favorites_delete,
+            filters=filters.User(user_id=telegram_user_id),
         )
     )
+    application.add_handler(CallbackQueryHandler(delete_button))
     application.add_handler(conv_handler)
     application.add_handler(fav_handler)
     application.job_queue.run_repeating(healthcheck, interval=300, first=300)
