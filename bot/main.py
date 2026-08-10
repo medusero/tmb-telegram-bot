@@ -126,15 +126,10 @@ async def favorites_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def favorites_receive_alias(update: Update, context: ContextTypes.DEFAULT_TYPE):
     alias = update.message.text
-    if len(alias.split()) == 1:
-        context.user_data["alias"] = alias
-        await update.message.reply_text("¿Cuál es el código de parada?")
-        return WAITING_FOR_FAVORITE_CODE
-    else:
-        await update.effective_message.reply_text(
-            "Has introducido dos palabras; solo se acepta una"
-        )
-        return WAITING_FOR_ALIAS
+    context.user_data["alias"] = alias
+    await update.message.reply_text("¿Cuál es el código de parada?")
+    return WAITING_FOR_FAVORITE_CODE
+    return WAITING_FOR_ALIAS
 
 
 async def favorites_receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
