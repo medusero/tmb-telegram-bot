@@ -39,7 +39,7 @@ WAITING_FOR_FAVORITE_CODE = 3
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await update.message.reply_html(
-        rf"Hi {user.mention_html()}!",
+        rf"Hola, {user.mention_html()}!",
         reply_markup=ForceReply(selective=True),
     )
 
