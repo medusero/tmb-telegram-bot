@@ -25,7 +25,7 @@ Carga, hace .pop(alias) (lanza KeyError si no existe) y vuelve a guardar.
 Se ejecuta periódicamente (cada 5 min, vía job_queue).  
 Intenta obtener_llegadas con una parada fija; si falla 3 veces seguidas, avisa por Telegram ("Revisa la API"); cuando vuelve a funcionar tras haber avisado, notifica la recuperación.  
 El estado (contador de fallos, si ya se avisó) vive en context.bot_data, un diccionario que persiste entre invocaciones del job mientras el proceso siga vivo.
-### bot/main.py: lógica de Telegram: comandos, conversaciones y formateo.
+### bot/main.py: comandos, conversaciones y formateo.
 ***format_arrivals(stop_code)***  
 Toma la salida de obtener_llegadas y construye el texto final por línea, con hora absoluta y minutos relativos entre paréntesis (p. ej. 08:15 (6m.)).
 ### Comandos simples:
