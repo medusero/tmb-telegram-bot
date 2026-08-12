@@ -41,7 +41,7 @@ Toma la salida de obtener_llegadas y construye el texto final por línea, con ho
 ### Menú de botones:
 - `/borrar` (presenta cada favorito como un botón; pulsar uno lo elimina)
 ### Otros detalles
-- post_init: registra el menú de com al arrancar.
+- post_init: registra el menú al arrancar.
 - main(): monta la Application, registra todos los handlers y el job de healthcheck, y arranca el polling.
 
 ## Requisitos previos
@@ -55,7 +55,7 @@ El bot solo hace peticiones salientes (long polling a Telegram + llamadas a la A
 Clona el repositorio en local y construye la imagen.  
 Copia el `.env.example` a tu directorio de trabajo. Para este ejemplo pongamos que es `$HOME/bot`.  
 Rellena los datos del `.env` para `TMB_APP_ID`, `TMB_APP_KEY`, `TELEGRAM_BOT_TOKEN` y `TELEGRAM_USER_ID`.   
-Crea el directorio de montaje, de lo contrario Docker la crearía como root en el despliegue y el servicio, que corre con `uid 1000`, no podría escribir nada en él.
+Crea el directorio de montaje, de lo contrario Docker la crearía como root en el despliegue, y el servicio (que corre con `uid 1000`) no podría escribir nada en él.
 ```
 mkdir $HOME/bot
 git clone https://github.com/medusero/tmb-telegram-bot.git
@@ -89,7 +89,7 @@ Desde el directorio `$HOME/bot`:
 docker compose up -d
 ```
 ### Podman
-Igual que con Docker, pero ojo si vas rootless: la imagen corre con `uid 1000` dentro del contenedor, y ese UID no mapea automáticamente al dueño del directorio del host, aunque este tambien sea `uid 1000`.  
+Igual que con Docker, pero ojo si vas rootless: la imagen corre con `uid 1000` dentro del contenedor, y ese UID no mapea automáticamente al dueño del directorio del host, aunque este tambien sea `uid 1000`. Lo arreglamos con `podman unshare`. 
 ```
 mkdir $HOME/bot
 git clone https://github.com/medusero/tmb-telegram-bot.git
