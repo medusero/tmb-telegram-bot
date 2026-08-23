@@ -257,11 +257,6 @@ def main():
     )
     application.add_handler(
         CommandHandler(
-            "cancelar", cancel, filters=filters.User(user_id=telegram_user_id)
-        )
-    )
-    application.add_handler(
-        CommandHandler(
             "parada", stop_command, filters=filters.User(user_id=telegram_user_id)
         )
     )
@@ -282,6 +277,11 @@ def main():
     application.add_handler(CallbackQueryHandler(delete_button))
     application.add_handler(conv_handler)
     application.add_handler(fav_handler)
+    application.add_handler(
+        CommandHandler(
+            "cancelar", cancel, filters=filters.User(user_id=telegram_user_id)
+        )
+    )
     application.job_queue.run_repeating(healthcheck, interval=300, first=300)
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
